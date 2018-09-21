@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="ehcache.xsd" updateCheck="false"
+         monitoring="autodetect" dynamicConfig="false">
+
+    <!-- <terracottaConfig url="127.0.0.1:9510" /> -->
+
+    <defaultCache maxElementsInMemory="100" eternal="false"
+                  timeToIdleSeconds="300" timeToLiveSeconds="300" overflowToDisk="false"
+                  memoryStoreEvictionPolicy="LRU" statistics="false" maxElementsOnDisk="100"
+    />
+
+    <cache name="shiroSessionCache" maxElementsInMemory="100" eternal="true"
+           timeToIdleSeconds="0" timeToLiveSeconds="0" overflowToDisk="false"
+           memoryStoreEvictionPolicy="LRU" statistics="true" maxElementsOnDisk="100">
+        <!-- <terracotta />  -->
+    </cache>
+
+    <cache name="shiroAuthorizationCache" maxElementsInMemory="100" eternal="true"
+           timeToIdleSeconds="0" timeToLiveSeconds="0" overflowToDisk="false"
+           memoryStoreEvictionPolicy="LRU" statistics="true" maxElementsOnDisk="100"
+    >
+        <!-- <terracotta />  -->
+    </cache>
+
+    <cache name="shiroAuthenticationCache" maxElementsInMemory="100" eternal="true"
+           timeToIdleSeconds="0" timeToLiveSeconds="0" overflowToDisk="false"
+           memoryStoreEvictionPolicy="LRU" statistics="true" maxElementsOnDisk="100"
+    >
+        <!-- <terracotta />  -->
+    </cache>
+
+    <cache name="appCache" maxElementsInMemory="100" eternal="true"
+           timeToIdleSeconds="0" timeToLiveSeconds="0" overflowToDisk="false"
+           memoryStoreEvictionPolicy="LRU" statistics="true" maxElementsOnDisk="100"
+    >
+        <!-- <terracotta />  -->
+    </cache>
+</ehcache>

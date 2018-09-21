@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:cache="http://www.springframework.org/schema/cache"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager" />
+        <property name="filterChainDefinitions">
+            <value>
+                /login* = anon
+                /api/v1/** = noSessionCreation,authcBasic
+                /** = authc
+            </value>
+        </property>
+        <property name="loginUrl" value="/login" />
+        <property name="successUrl" value="/" />
+        <property name="unauthorizedUrl" value="/unathorized" />
+    </bean>
+
+    <bean id="restRealm" class="realm.MyRestRealm"
+          p:credentialsMatcher-ref="passwordMatcher"
+          p:authorizationCacheName="shiroAuthorizationCache"
+          p:authenticationCacheName="shiroAuthenticationCache"
+          p:cachingEnabled="true"
+          p:cacheManager-ref="cacheManagerShiro"
+    />
+
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager" >
+        <property name="realm" ref="restRealm" />
+        <property name="sessionManager" ref="sessionManager" />
+        <property name="cacheManager" ref="cacheManagerShiro" />
+    </bean>
+
+    <bean id="passwordMatcher" class="org.apache.shiro.authc.credential.PasswordMatcher"
+          p:passwordService-ref="passwordService" />
+
+    <bean id="cacheManagerShiro" class="org.apache.shiro.cache.ehcache.EhCacheManager" >
+        <property name="cacheManager" ref="ehcacheManager" />
+    </bean>
+
+    <bean id="sessionDAO"
+          class="org.apache.shiro.session.mgt.eis.EnterpriseCacheSessionDAO">
+        <property name="activeSessionsCacheName" value="shiroSessionCache" />
+    </bean>
+
+    <bean id="sessionManager"
+          class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager" >
+        <property name="sessionDAO" ref="sessionDAO" />
+        <property name="globalSessionTimeout" value="5400000" /> <!-- 90 minutes-5400000 -->
+        <property name="sessionValidationInterval" value="5400000" />
+        <property name="sessionIdCookie" ref="sessionCookie" />
+    </bean>
+
+    <bean id="sessionCookie" class="org.apache.shiro.web.servlet.SimpleCookie"
+          p:secure="false"
+          p:httpOnly="true"
+          p:name="JSESSIONID"
+    />
+
+    <bean id="passwordService"
+          class="org.apache.shiro.authc.credential.DefaultPasswordService" />
+
+    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor" />
+    <bean
+            class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+            depends-on="lifecycleBeanPostProcessor" />
+    <bean
+            class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager" />
+    </bean>
+
+
+    <bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+        <property name="cacheManager" ref="ehcacheManager" />
+    </bean>
+
+    <bean id="ehcacheManager"
+          class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean"
+          p:shared="true"
+          p:configLocation="WEB-INF/security/ehcache.xml"
+
+    />
+
+</beans>

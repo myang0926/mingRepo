@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+                    http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+                    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+                    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+                     http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa-1.1.xsd">
+
+    <mvc:annotation-driven/>
+    <context:component-scan base-package="controller,service"/>
+    <bean id="myEmf"
+          class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="packagesToScan" value="model" />
+        <property name="jpaVendorAdapter">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter" />
+        </property>
+        <property name="jpaProperties">
+            <props>
+                <prop key="hibernate.hbm2ddl.auto">update</prop>
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop>
+                <prop key="show_sql">true</prop>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="dataSource"
+          class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+        <property name="url" value="jdbc:mysql://localhost:3306" />
+        <property name="username" value="admin" />
+        <property name="password" value="pp6688" />
+    </bean>
+
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/views/" />
+        <property name="suffix" value=".jsp" />
+    </bean>
+
+    <bean id="transactionManager"
+          class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="myEmf" />
+    </bean>
+
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager" />
+        <property name="filterChainDefinitions">
+            <value>
+                /login* = anon
+                /** = noSessionCreation,bearerAuth
+            </value>
+        </property>
+        <property name="loginUrl" value="/login" />
+        <property name="successUrl" value="/" />
+        <property name="unauthorizedUrl" value="/unathorized" />
+    </bean>
+
+    <bean id="bearerAuth" class="filter.JWTOrFormAuthenticationFilter">
+    </bean>
+
+    <bean id="restRealm" class="realm.MyRestRealm"
+          p:credentialsMatcher-ref="passwordMatcher"
+          p:authorizationCacheName="shiroAuthorizationCache"
+          p:authenticationCacheName="shiroAuthenticationCache"
+          p:cachingEnabled="true"
+          p:cacheManager-ref="cacheManagerShiro"
+    />
+
+    <bean id="jwtRealm" class="realm.MyBearerRealm"
+          p:credentialsMatcher-ref="noOpCredentialsMatcher"
+          p:authorizationCacheName="shiroAuthorizationCache"
+          p:authenticationCacheName="shiroAuthenticationCache"
+          p:cachingEnabled="true"
+          p:cacheManager-ref="cacheManagerShiro"
+    />
+
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager" >
+        <property name="realms">
+            <list>
+                <ref bean="restRealm"></ref>
+                <ref bean="jwtRealm"></ref>
+            </list>
+        </property>
+        <property name="sessionManager" ref="sessionManager" />
+        <property name="cacheManager" ref="cacheManagerShiro" />
+    </bean>
+
+    <bean id="noOpCredentialsMatcher" class="matchers.NoOpCredentialsMatcher"/>
+    <bean id="passwordMatcher" class="org.apache.shiro.authc.credential.PasswordMatcher"
+          p:passwordService-ref="passwordService" />
+
+    <bean id="cacheManagerShiro" class="org.apache.shiro.cache.ehcache.EhCacheManager" >
+        <property name="cacheManager" ref="ehcacheManager" />
+    </bean>
+
+    <bean id="sessionDAO"
+          class="org.apache.shiro.session.mgt.eis.EnterpriseCacheSessionDAO">
+        <property name="activeSessionsCacheName" value="shiroSessionCache" />
+    </bean>
+
+    <bean id="sessionManager"
+          class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager" >
+        <property name="sessionDAO" ref="sessionDAO" />
+        <property name="globalSessionTimeout" value="5400000" /> <!-- 90 minutes-5400000 -->
+        <property name="sessionValidationInterval" value="5400000" />
+        <property name="sessionIdCookie" ref="sessionCookie" />
+    </bean>
+
+    <bean id="sessionCookie" class="org.apache.shiro.web.servlet.SimpleCookie"
+          p:secure="false"
+          p:httpOnly="true"
+          p:name="JSESSIONID"
+    />
+
+    <bean id="passwordService"
+          class="org.apache.shiro.authc.credential.DefaultPasswordService" />
+
+    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor" />
+    <bean
+            class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+            depends-on="lifecycleBeanPostProcessor" />
+    <bean
+            class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager" />
+    </bean>
+
+
+    <bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+        <property name="cacheManager" ref="ehcacheManager" />
+    </bean>
+
+    <bean id="ehcacheManager"
+          class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean"
+          p:shared="true"
+          p:configLocation="WEB-INF/security/ehcache.xml"
+
+    />
+
+
+    <tx:annotation-driven />
+    <jpa:repositories base-package="repository" ></jpa:repositories>
+
+
+</beans>
